@@ -1,5 +1,4 @@
-from flask import Flask, jsonify
-from pony.orm.serialization import to_dict, to_json
+from flask import Flask, jsonify, request
 from models import *
 from datetime import datetime
 
@@ -20,11 +19,11 @@ def populate():
     m2 = Menu(delivery_name=d1, name='Мясная', description='Ваще оч вкусно', weight=1600, price=750)
     a1 = Address(latitude=58.264846, longitude=65.211548, additional_info='подъезд 2, кв. 348, этаж 16')
     c1 = Client(chatID='@client', address=a1)
-    oi1 = OrderInfo(client=c1)
-    Order(number=oi1, date=datetime.now(), menu_position=m1, count=2)
-    Order(number=oi1, date=datetime.now(), menu_position=m2, count=1)
-    oi2 = OrderInfo(client=c1)
-    Order(number=oi2, date=datetime.now(), menu_position=m2, count=3)
+    o1 = Order(client=c1)
+    OrderInfo(number=o1, date=datetime.now(), menu_position=m1, count=2)
+    OrderInfo(number=o1, date=datetime.now(), menu_position=m2, count=1)
+    o2 = Order(client=c1)
+    OrderInfo(number=o2, date=datetime.now(), menu_position=m2, count=3)
     return 'success'
 
 
@@ -32,7 +31,7 @@ def populate():
 @db_session
 def orders():
     orders = []
-    for o in OrderInfo.select():
+    for o in Order.select():
         orders.append(o.to_dict(with_collections=True))
     return jsonify(orders)
 
@@ -41,14 +40,64 @@ def orders():
 @db_session
 def orders_info():
     orders = []
-    for o in Order.select():
+    for o in OrderInfo.select():
         orders.append(o.to_dict(with_collections=True))
     return jsonify(orders)
 
 
-@app.route('/api/orders/<int:number>')
-def orders_by_num(number):
-    return jsonify(model_to_dict(Order.select().where(Order.number == number).get(), recurse=False))
+@app.route('/api/deliveries')
+@db_session
+def deliveries():
+    deliveries = []
+    for d in Delivery.select():
+        deliveries.append(d.to_dict())
+    return jsonify(deliveries)
+
+
+@app.route('/api/delivery_types')
+@db_session
+def types():
+    types = []
+    for t in DeliveryType.select():
+        types.append(t.to_dict())
+    return jsonify(types)
+
+
+@app.route('/api/clients')
+@db_session
+def clients():
+    clients = []
+    for c in Client.select():
+        clients.append(c.to_dict())
+    return jsonify(clients)
+
+
+@app.route('/api/clients', methods=['POST'])
+@db_session
+def new_client():
+    req = request.get_json()
+    address = Address(latitude=req['latitude'], longitude=req['longitude'], additional_info=req['additional_info'])
+    client = Client(chatID=req['chatID'], address=address)
+    return jsonify(client.to_dict())
+
+
+@app.route('/api/orders', methods=['POST'])
+@db_session
+def place_order():
+    req = request.get_json()
+    order = Order(client=req['client'])
+    for i in req['info']:
+        OrderInfo(number=order, date=datetime.now(), menu_position=i['menu_position'], count=i['count'])
+    return jsonify(order.to_dict())
+
+
+@app.route('/api/menu', methods=['POST'])
+@db_session
+def add_menu_item():
+    req = request.get_json()
+    menu = Menu(delivery_name=req['delivery_name'], name=req['name'], description=req['description'],
+                weight=req['weight'], price=req['price'], photo=req['photo'])
+    return jsonify(menu.to_dict())
 
 
 if __name__ == '__main__':

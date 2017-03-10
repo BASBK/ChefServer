@@ -6,7 +6,7 @@ db = Database()
 
 class DeliveryType(db.Entity):
     type_name = PrimaryKey(str)
-    delivery = Optional('Delivery')
+    delivery = Set('Delivery')
 
 
 class Delivery(db.Entity):
@@ -27,11 +27,11 @@ class Address(db.Entity):
 class Client(db.Entity):
     chatID = PrimaryKey(str)
     address = Required(Address)
-    order = Set('OrderInfo')
+    order = Set('Order')
 
 
-class Order(db.Entity):
-    number = Required('OrderInfo')
+class OrderInfo(db.Entity):
+    number = Required('Order')
     date = Required(datetime)
     menu_position = Required('Menu')
     count = Required(int)
@@ -44,13 +44,13 @@ class Menu(db.Entity):
     weight = Required(float)
     price = Required(float)
     photo = Optional(str)
-    order = Set(Order)
+    order = Set(OrderInfo)
 
 
-class OrderInfo(db.Entity):
+class Order(db.Entity):
     number = PrimaryKey(int, auto=True)
     client = Required(Client)
-    order = Set(Order)
+    info = Set(OrderInfo)
 
 
 db.bind('sqlite', 'chef.db', create_db=True)
