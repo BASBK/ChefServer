@@ -1,5 +1,6 @@
 from pony.orm import *
 from datetime import datetime
+import pony.orm.dbproviders.postgres
 
 db = Database()
 
@@ -53,5 +54,7 @@ class Order(db.Entity):
     info = Set(OrderInfo)
 
 
-db.bind('sqlite', 'chef.db', create_db=True)
+db.bind('postgres', dbname="d3atsp68tiv44j", user="wuwecbvljbvmpe",
+        password="5e04751395ea098f11e4b89c63acf6ae1e8155f97a39919659541d3368029334",
+        host='ec2-176-34-111-152.eu-west-1.compute.amazonaws.com', port='5432')
 db.generate_mapping(create_tables=True)
