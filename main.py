@@ -39,10 +39,10 @@ def orders():
 @app.route('/api/orders_info')
 @db_session
 def orders_info():
-    orders = []
+    orders_info = []
     for o in OrderInfo.select():
-        orders.append(o.to_dict(with_collections=True))
-    return jsonify(orders)
+        orders_info.append(o.to_dict(with_collections=True))
+    return jsonify(orders_info)
 
 
 @app.route('/api/deliveries')
@@ -63,6 +63,15 @@ def types():
     return jsonify(types)
 
 
+@app.route('/api/deliveries/<string:dtype>')
+@db_session
+def deliveries_by_type(dtype):
+    result = []
+    for d in Delivery.select(lambda deliv: deliv.type.type_name == dtype):
+        result.append(d.to_dict())
+    return jsonify(result)
+
+
 @app.route('/api/clients')
 @db_session
 def clients():
@@ -70,6 +79,15 @@ def clients():
     for c in Client.select():
         clients.append(c.to_dict())
     return jsonify(clients)
+
+
+@app.route('/api/deliveries', methods=['POST'])
+@db_session
+def add_delivery():
+    req = request.get_json()
+    delivery = Delivery(name=req['name'], type=DeliveryType.get(type_name=req['type_name']),
+                        courier_chatID=req['courier_chatID'], cook_chatID=req['cook_chatID'])
+    return jsonify(delivery.to_dict())
 
 
 @app.route('/api/clients', methods=['POST'])
@@ -91,6 +109,15 @@ def place_order():
     return jsonify(order.to_dict())
 
 
+@app.route('/api/menu/<string:delivery>')
+@db_session
+def menu_by_delivery(delivery):
+    result = []
+    for m in Menu.select(lambda menu: menu.delivery_name.name == delivery):
+        result.append(m.to_dict())
+    return jsonify(result)
+
+
 @app.route('/api/menu', methods=['POST'])
 @db_session
 def add_menu_item():
@@ -101,5 +128,6 @@ def add_menu_item():
 
 
 if __name__ == '__main__':
+    app.config['JSON_AS_ASCII'] = False
     # app.run(host="0.0.0.0", port=os.environ.get('PORT', 5000))
     app.run(debug=True)
