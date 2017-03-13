@@ -83,6 +83,15 @@ def clients():
     return jsonify(clients)
 
 
+@app.route('/api/menu')
+@db_session
+def menu():
+    menu = []
+    for m in Menu.select():
+        menu.append(m.to_dict())
+    return jsonify(menu)
+
+
 @app.route('/api/deliveries', methods=['POST'])
 @db_session
 def add_delivery():
