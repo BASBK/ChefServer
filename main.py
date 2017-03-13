@@ -142,11 +142,11 @@ def add_menu_item():
 @db_session
 def set_photo_id(m_name):
     m = Menu.get(name=m_name)
-    m.photo_id = request.args.get['photo_id']
+    m.photo_id = request.args.get('photo_id')
     return m
 
 
 if __name__ == '__main__':
     app.config['JSON_AS_ASCII'] = False
-    app.run(host="0.0.0.0", port=os.environ.get('PORT', 5000))
-    # app.run(debug=True)
+    # app.run(host="0.0.0.0", port=os.environ.get('PORT', 5000))
+    app.run(debug=True)
