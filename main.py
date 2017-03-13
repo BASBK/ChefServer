@@ -138,7 +138,7 @@ def add_menu_item():
     return jsonify(menu.to_dict())
 
 
-@app.route('/api/menu/<string:name>', methods=['POST'])
+@app.route('/api/menu/<string:name>', methods=['PUT'])
 @db_session
 def set_photo_id(name):
     m = Menu.get(Menu.name == name)
