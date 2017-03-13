@@ -45,6 +45,7 @@ class Menu(db.Entity):
     weight = Required(float)
     price = Required(float)
     photo = Optional(str)
+    photo_id = Optional(str)
     order = Set(OrderInfo)
 
 
