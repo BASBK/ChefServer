@@ -1,5 +1,4 @@
 import os
-
 from flask import Flask, jsonify, request
 from models import *
 from datetime import datetime
@@ -138,13 +137,20 @@ def add_menu_item():
     return jsonify(menu.to_dict())
 
 
-@app.route('/api/menu/<string:m_name>', methods=['PUT'])
+@app.route('/api/menu/<string:m_name>/photo', methods=['PUT'])
 @db_session
-def set_photo_id(m_name):
+def set_menu_photo_id(m_name):
     m = Menu.get(name=m_name)
     m.photo_id = request.args.get('photo_id')
     return m
 
+
+@app.route('/api/deliveries/<string:d_name>/photo', methods=['PUT'])
+@db_session
+def set_delivery_photo_id(d_name):
+    d = Delivery.get(name=d_name)
+    d.photo_id = request.args.get('photo_id')
+    return d
 
 if __name__ == '__main__':
     app.config['JSON_AS_ASCII'] = False

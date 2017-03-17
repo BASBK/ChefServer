@@ -1,6 +1,5 @@
 from pony.orm import *
 from datetime import datetime
-import pony.orm.dbproviders.postgres
 
 db = Database()
 
