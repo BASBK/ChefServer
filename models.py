@@ -14,6 +14,8 @@ class Delivery(db.Entity):
     type = Required(DeliveryType)
     courier_chatID = Required(str)
     cook_chatID = Required(str)
+    photo = Optional(str)
+    photo_id = Optional(str)
     menu = Set('Menu')
 
 
