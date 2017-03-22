@@ -119,6 +119,32 @@ def place_order():
     return jsonify(order.to_dict())
 
 
+@app.route('/api/basket/<string:client>', methods=['GET', 'POST', 'PUT', 'DELETE'])
+@db_session
+def manage_basket(client):
+    req = request.get_json()
+    if request.method == 'GET':
+        result = []
+        for b in Basket.select(lambda basket: basket.client.chatID == client):
+            result.append(b.to_dict())
+        return jsonify(result)
+    elif request.method == 'POST':
+        basket = Basket(client=client, menu_position=req['menu_position'],
+                        count=req['count'], date=datetime.now())
+        return jsonify(basket.to_dict())
+    elif request.method == 'PUT':
+        basket = Basket.get(client=client, menu_position=req['menu_position'])
+        basket.count = req['count']
+        return jsonify(basket.to_dict())
+    else:
+        if req['whole']:
+            for b in Basket.select(lambda basket: basket.client.chatID == client):
+                b.delete()
+            return 200
+        else:
+            Basket.get(client=client, menu_position=req['menu_position']).delete()
+            return 200
+
 @app.route('/api/menu/<string:delivery>')
 @db_session
 def menu_by_delivery(delivery):
