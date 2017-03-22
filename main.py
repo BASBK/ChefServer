@@ -2,6 +2,7 @@ import os
 from flask import Flask, jsonify, request
 from models import *
 from datetime import datetime
+import json
 
 app = Flask(__name__)
 
@@ -122,18 +123,21 @@ def place_order():
 @app.route('/api/basket/<string:client>', methods=['GET', 'POST', 'PUT', 'DELETE'])
 @db_session
 def manage_basket(client):
-    req = request.get_json()
+    req = json.loads(request.get_json())
+    print(req)
     if request.method == 'GET':
         result = []
         for b in Basket.select(lambda basket: basket.client.chatID == client):
             result.append(b.to_dict())
         return jsonify(result)
     elif request.method == 'POST':
-        basket = Basket(client=Client.get(chatID=client), menu_position=Menu.get(delivery_name=Delivery.get(name=req['delivery']), name=req['menu_name']),
+        basket = Basket(client=Client.get(chatID=client),
+                        menu_position=Menu.get(delivery_name=Delivery.get(name=req['delivery']), name=req['menu_name']),
                         count=req['count'], date=datetime.now())
         return jsonify(basket.to_dict())
     elif request.method == 'PUT':
-        basket = Basket.get(client=Client.get(chatID=client), menu_position=Menu.get(delivery_name=req['delivery'], name=req['menu_name']))
+        basket = Basket.get(client=Client.get(chatID=client),
+                            menu_position=Menu.get(delivery_name=Delivery.get(name=req['delivery']), name=req['menu_name']))
         basket.count = req['count']
         return jsonify(basket.to_dict())
     else:
