@@ -142,7 +142,7 @@ def manage_basket(client):
                 b.delete()
             return 200
         else:
-            Basket.get(client=client, menu_position=req['menu_position']).delete()
+            Basket.get(client=Client.get(chatID=client), menu_position=req['menu_position']).delete()
             return 200
 
 @app.route('/api/menu/<string:delivery>')
