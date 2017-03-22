@@ -133,7 +133,7 @@ def manage_basket(client):
                         count=req['count'], date=datetime.now())
         return jsonify(basket.to_dict())
     elif request.method == 'PUT':
-        basket = Basket.get(client=client, menu_position=Menu.get(delivery_name=req['delivery'], name=req['menu_name']))
+        basket = Basket.get(client=Client.get(chatID=client), menu_position=Menu.get(delivery_name=req['delivery'], name=req['menu_name']))
         basket.count = req['count']
         return jsonify(basket.to_dict())
     else:
