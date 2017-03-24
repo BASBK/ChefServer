@@ -1,5 +1,5 @@
 import os
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, make_response
 from models import *
 from datetime import datetime
 import json
@@ -15,12 +15,29 @@ def helloworld():
 @app.route('/api/populate')
 @db_session
 def populate():
-    dt1 = DeliveryType(type_name='Пиццерия')
-    d1 = Delivery(name='Ташир', type=dt1, courier_chatID='@courier', cook_chatID='@cooking')
+    dt1 = DeliveryType(type_name='Пиццерии')
+    dt2 = DeliveryType(type_name='Суши')
+    dt3 = DeliveryType(type_name='На углях')
+    d1 = Delivery(name='Ташир', type=dt1, courier_chatID=321546879, cook_chatID=654123748)
+    d2 = Delivery(name='2 Берега', type=dt1, courier_chatID=771546879, cook_chatID=774123748)
+    d3 = Delivery(name='Суши WOK', type=dt2, courier_chatID=881546879, cook_chatID=124123748)
+    d4 = Delivery(name='Рокенроллы', type=dt2, courier_chatID=321545579, cook_chatID=654423948)
+    d5 = Delivery(name='Браш', type=dt3, courier_chatID=321541179, cook_chatID=654123118)
+    d6 = Delivery(name='Тамада', type=dt3, courier_chatID=321599879, cook_chatID=654123998)
     m1 = Menu(delivery_name=d1, name='4 сыра', description='Вкуснота', weight=1500, price=650)
     m2 = Menu(delivery_name=d1, name='Мясная', description='Ваще оч вкусно', weight=1600, price=750)
+    Menu(delivery_name=d2, name='Гавайская', description='Вкуснота', weight=1500, price=650)
+    Menu(delivery_name=d2, name='Пепперони', description='Ваще оч вкусно', weight=1600, price=750)
+    Menu(delivery_name=d3, name='Филадельфия', description='Вкуснота', weight=1500, price=650)
+    Menu(delivery_name=d3, name='Сашими', description='Ваще оч вкусно', weight=1600, price=750)
+    Menu(delivery_name=d4, name='Ролл Фуджи', description='Вкуснота', weight=1500, price=650)
+    Menu(delivery_name=d4, name='Ролл Олимп', description='Ваще оч вкусно', weight=1600, price=750)
+    Menu(delivery_name=d5, name='Свинная мякоть', description='Вкуснота', weight=1500, price=650)
+    Menu(delivery_name=d5, name='Свинная шея', description='Ваще оч вкусно', weight=1600, price=750)
+    Menu(delivery_name=d6, name='Баранина мякоть', description='Вкуснота', weight=1500, price=650)
+    Menu(delivery_name=d6, name='Люля-кебаб', description='Ваще оч вкусно', weight=1600, price=750)
     a1 = Address(latitude=58.264846, longitude=65.211548, additional_info='подъезд 2, кв. 348, этаж 16')
-    c1 = Client(chatID='@client', address=a1)
+    c1 = Client(chatID=123456789, address=a1)
     o1 = Order(client=c1)
     OrderInfo(number=o1, date=datetime.now(), menu_position=m1, count=2)
     OrderInfo(number=o1, date=datetime.now(), menu_position=m2, count=1)
@@ -120,35 +137,35 @@ def place_order():
     return jsonify(order.to_dict())
 
 
-@app.route('/api/basket/<string:client>', methods=['GET', 'POST', 'PUT', 'DELETE'])
+@app.route('/api/basket/<int:client>', methods=['GET', 'POST', 'PUT', 'DELETE'])
 @db_session
-def manage_basket(client):
+def manage_cart(client):
     if request.method == 'GET':
         result = []
-        for b in Basket.select(lambda basket: basket.client.chatID == client):
-            result.append(b.to_dict())
+        for c in ShoppingCart.select(lambda cart: cart.client.chatID == client):
+            result.append(c.to_dict())
         return jsonify(result)
     elif request.method == 'POST':
         req = json.loads(request.get_json())
-        basket = Basket(client=Client.get(chatID=client),
-                        menu_position=Menu.get(delivery_name=Delivery.get(name=req['delivery']), name=req['menu_name']),
-                        count=req['count'], date=datetime.now())
-        return jsonify(basket.to_dict())
+        cart = ShoppingCart(client=Client.get(chatID=client),
+                            menu_position=Menu.get(delivery_name=Delivery.get(name=req['delivery']), name=req['menu_name']),
+                            count=req['count'], date=datetime.now())
+        return jsonify(cart.to_dict())
     elif request.method == 'PUT':
         req = json.loads(request.get_json())
-        basket = Basket.get(client=Client.get(chatID=client),
-                            menu_position=Menu.get(delivery_name=Delivery.get(name=req['delivery']), name=req['menu_name']))
-        basket.count = req['count']
-        return jsonify(basket.to_dict())
+        cart = ShoppingCart.get(client=Client.get(chatID=client),
+                                menu_position=Menu.get(delivery_name=Delivery.get(name=req['delivery']), name=req['menu_name']))
+        cart.count = req['count']
+        return jsonify(cart.to_dict())
     else:
         req = json.loads(request.get_json())
         if req['whole']:
-            for b in Basket.select(lambda basket: basket.client.chatID == client):
-                b.delete()
-            return 200
+            for c in ShoppingCart.select(lambda cart: cart.client.chatID == client):
+                c.delete()
+            return make_response(200)
         else:
-            Basket.get(client=Client.get(chatID=client), menu_position=req['menu_position']).delete()
-            return 200
+            ShoppingCart.get(client=Client.get(chatID=client), menu_position=req['menu_position']).delete()
+            return make_response(200)
 
 @app.route('/api/menu/<string:delivery>')
 @db_session
@@ -182,6 +199,7 @@ def set_delivery_photo_id(d_name):
     d = Delivery.get(name=d_name)
     d.photo_id = request.args.get('photo_id')
     return d
+
 
 if __name__ == '__main__':
     app.config['JSON_AS_ASCII'] = False

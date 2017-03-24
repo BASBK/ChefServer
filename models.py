@@ -12,8 +12,8 @@ class DeliveryType(db.Entity):
 class Delivery(db.Entity):
     name = PrimaryKey(str)
     type = Required(DeliveryType)
-    courier_chatID = Required(str)
-    cook_chatID = Required(str)
+    courier_chatID = Required(int)
+    cook_chatID = Required(int)
     photo = Optional(str)
     photo_id = Optional(str)
     menu = Set('Menu', cascade_delete=True)
@@ -27,10 +27,10 @@ class Address(db.Entity):
 
 
 class Client(db.Entity):
-    chatID = PrimaryKey(str)
+    chatID = PrimaryKey(int)
     address = Required(Address, cascade_delete=True)
     order = Set('Order', cascade_delete=True)
-    basket = Set('Basket', cascade_delete=True)
+    basket = Set('ShoppingCart', cascade_delete=True)
 
 
 class OrderInfo(db.Entity):
@@ -49,7 +49,7 @@ class Menu(db.Entity):
     photo = Optional(str)
     photo_id = Optional(str)
     order = Set(OrderInfo, cascade_delete=True)
-    basket = Set('Basket', cascade_delete=True)
+    basket = Set('ShoppingCart', cascade_delete=True)
 
 
 class Order(db.Entity):
@@ -58,8 +58,8 @@ class Order(db.Entity):
     info = Set(OrderInfo, cascade_delete=True)
 
 
-class Basket(db.Entity):
-    client = Required(Client)
+class ShoppingCart(db.Entity):
+    chatID = Required(int)
     menu_position = Required(Menu)
     count = Required(int)
     date = Required(datetime)
