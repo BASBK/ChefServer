@@ -142,29 +142,29 @@ def place_order():
 def manage_cart(client):
     if request.method == 'GET':
         result = []
-        for c in ShoppingCart.select(lambda cart: cart.client.chatID == client):
+        for c in ShoppingCart.select(lambda cart: cart.client == client):
             result.append(c.to_dict())
         return jsonify(result)
     elif request.method == 'POST':
         req = json.loads(request.get_json())
-        cart = ShoppingCart(client=Client.get(chatID=client),
+        cart = ShoppingCart(client=client,
                             menu_position=Menu.get(delivery_name=Delivery.get(name=req['delivery']), name=req['menu_name']),
                             count=req['count'], date=datetime.now())
         return jsonify(cart.to_dict())
     elif request.method == 'PUT':
         req = json.loads(request.get_json())
-        cart = ShoppingCart.get(client=Client.get(chatID=client),
+        cart = ShoppingCart.get(client=client,
                                 menu_position=Menu.get(delivery_name=Delivery.get(name=req['delivery']), name=req['menu_name']))
         cart.count = req['count']
         return jsonify(cart.to_dict())
     else:
         req = json.loads(request.get_json())
         if req['whole']:
-            for c in ShoppingCart.select(lambda cart: cart.client.chatID == client):
+            for c in ShoppingCart.select(lambda cart: cart.client == client):
                 c.delete()
             return make_response(200)
         else:
-            ShoppingCart.get(client=Client.get(chatID=client), menu_position=req['menu_position']).delete()
+            ShoppingCart.get(client=client, menu_position=req['menu_position']).delete()
             return make_response(200)
 
 @app.route('/api/menu/<string:delivery>')
