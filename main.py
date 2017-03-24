@@ -137,7 +137,7 @@ def place_order():
     return jsonify(order.to_dict())
 
 
-@app.route('/api/basket/<int:client>', methods=['GET', 'POST', 'PUT', 'DELETE'])
+@app.route('/api/cart/<int:client>', methods=['GET', 'POST', 'PUT', 'DELETE'])
 @db_session
 def manage_cart(client):
     if request.method == 'GET':

@@ -30,7 +30,6 @@ class Client(db.Entity):
     chatID = PrimaryKey(int)
     address = Required(Address, cascade_delete=True)
     order = Set('Order', cascade_delete=True)
-    basket = Set('ShoppingCart', cascade_delete=True)
 
 
 class OrderInfo(db.Entity):
@@ -49,7 +48,7 @@ class Menu(db.Entity):
     photo = Optional(str)
     photo_id = Optional(str)
     order = Set(OrderInfo, cascade_delete=True)
-    basket = Set('ShoppingCart', cascade_delete=True)
+    cart = Set('ShoppingCart', cascade_delete=True)
 
 
 class Order(db.Entity):
