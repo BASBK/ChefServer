@@ -1,4 +1,5 @@
 import os
+import base64
 from flask import Flask, jsonify, request, make_response
 from models import *
 from datetime import datetime
@@ -15,17 +16,30 @@ def helloworld():
 @app.route('/api/populate')
 @db_session
 def populate():
+    with open('images\deliveries\/tashir.jpg', 'rb') as img:
+        photo1 = str(base64.b64encode(img.read()))
+    with open('images\deliveries\2berega.jpg', 'rb') as img:
+        photo2 = str(base64.b64encode(img.read()))
+    with open('images\deliveries\sushiWOK.jpg', 'rb') as img:
+        photo3 = str(base64.b64encode(img.read()))
+    with open('images\deliveries\/rokenrolli.jpg', 'rb') as img:
+        photo4 = str(base64.b64encode(img.read()))
+    with open('images\deliveries\/brash.jpg', 'rb') as img:
+        photo5 = str(base64.b64encode(img.read()))
+    with open('images\deliveries\/tamada.jpg', 'rb') as img:
+        photo6 = str(base64.b64encode(img.read()))
+
     dt1 = DeliveryType(type_name='Пиццерии')
     dt2 = DeliveryType(type_name='Суши')
     dt3 = DeliveryType(type_name='На углях')
-    d1 = Delivery(name='Ташир', type=dt1, courier_chatID=321546879, cook_chatID=654123748)
-    d2 = Delivery(name='2 Берега', type=dt1, courier_chatID=771546879, cook_chatID=774123748)
-    d3 = Delivery(name='Суши WOK', type=dt2, courier_chatID=881546879, cook_chatID=124123748)
-    d4 = Delivery(name='Рокенроллы', type=dt2, courier_chatID=321545579, cook_chatID=654423948)
-    d5 = Delivery(name='Браш', type=dt3, courier_chatID=321541179, cook_chatID=654123118)
-    d6 = Delivery(name='Тамада', type=dt3, courier_chatID=321599879, cook_chatID=654123998)
-    m1 = Menu(delivery_name=d1, name='4 сыра', description='Вкуснота', weight=1500, price=650)
-    m2 = Menu(delivery_name=d1, name='Мясная', description='Ваще оч вкусно', weight=1600, price=750)
+    d1 = Delivery(name='Ташир', type=dt1, courier_chatID=321546879, cook_chatID=654123748, photo=photo1)
+    d2 = Delivery(name='2 Берега', type=dt1, courier_chatID=771546879, cook_chatID=774123748, photo=photo2)
+    d3 = Delivery(name='Суши WOK', type=dt2, courier_chatID=881546879, cook_chatID=124123748, photo=photo3)
+    d4 = Delivery(name='Рокенроллы', type=dt2, courier_chatID=321545579, cook_chatID=654423948, photo=photo4)
+    d5 = Delivery(name='Браш', type=dt3, courier_chatID=321541179, cook_chatID=654123118, photo=photo5)
+    d6 = Delivery(name='Тамада', type=dt3, courier_chatID=321599879, cook_chatID=654123998, photo=photo6)
+    Menu(delivery_name=d1, name='4 сыра', description='Вкуснота', weight=1500, price=650)
+    Menu(delivery_name=d1, name='Мясная', description='Ваще оч вкусно', weight=1600, price=750)
     Menu(delivery_name=d2, name='Гавайская', description='Вкуснота', weight=1500, price=650)
     Menu(delivery_name=d2, name='Пепперони', description='Ваще оч вкусно', weight=1600, price=750)
     Menu(delivery_name=d3, name='Филадельфия', description='Вкуснота', weight=1500, price=650)
@@ -36,13 +50,13 @@ def populate():
     Menu(delivery_name=d5, name='Свинная шея', description='Ваще оч вкусно', weight=1600, price=750)
     Menu(delivery_name=d6, name='Баранина мякоть', description='Вкуснота', weight=1500, price=650)
     Menu(delivery_name=d6, name='Люля-кебаб', description='Ваще оч вкусно', weight=1600, price=750)
-    a1 = Address(latitude=58.264846, longitude=65.211548, additional_info='подъезд 2, кв. 348, этаж 16')
-    c1 = Client(chatID=123456789, address=a1)
-    o1 = Order(client=c1)
-    OrderInfo(number=o1, date=datetime.now(), menu_position=m1, count=2)
-    OrderInfo(number=o1, date=datetime.now(), menu_position=m2, count=1)
-    o2 = Order(client=c1)
-    OrderInfo(number=o2, date=datetime.now(), menu_position=m2, count=3)
+    # a1 = Address(latitude=58.264846, longitude=65.211548, additional_info='подъезд 2, кв. 348, этаж 16')
+    # c1 = Client(chatID=123456789, address=a1)
+    # o1 = Order(client=c1)
+    # OrderInfo(number=o1, date=datetime.now(), menu_position=m1, count=2)
+    # OrderInfo(number=o1, date=datetime.now(), menu_position=m2, count=1)
+    # o2 = Order(client=c1)
+    # OrderInfo(number=o2, date=datetime.now(), menu_position=m2, count=3)
     return 'success'
 
 
@@ -147,9 +161,14 @@ def manage_cart(client):
         return jsonify(result)
     elif request.method == 'POST':
         req = json.loads(request.get_json())
-        cart = ShoppingCart(chatID=client,
-                            menu_position=Menu.get(delivery_name=Delivery.get(name=req['delivery']), name=req['menu_name']),
-                            count=req['count'], date=datetime.now())
+        cart = ShoppingCart.get(chatID=client,
+                                menu_position=Menu.get(delivery_name=Delivery.get(name=req['delivery']), name=req['menu_name']))
+        if cart is None:
+            cart = ShoppingCart(chatID=client,
+                                menu_position=Menu.get(delivery_name=Delivery.get(name=req['delivery']), name=req['menu_name']),
+                                count=req['count'], date=datetime.now())
+        else:
+            cart.count += 1
         return jsonify(cart.to_dict())
     elif request.method == 'PUT':
         req = json.loads(request.get_json())
@@ -166,6 +185,7 @@ def manage_cart(client):
         else:
             ShoppingCart.get(chatID=client, menu_position=req['menu_position']).delete()
             return make_response(200)
+
 
 @app.route('/api/menu/<string:delivery>')
 @db_session
