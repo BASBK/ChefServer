@@ -16,17 +16,17 @@ def helloworld():
 @app.route('/api/populate')
 @db_session
 def populate():
-    with open('images\deliveries\tashir.jpg', 'rb') as img:
+    with open('images\deliveries\\tashir.jpg', 'rb') as img:
         photo1 = str(base64.b64encode(img.read()))
     with open('images\deliveries\2berega.jpg', 'rb') as img:
         photo2 = str(base64.b64encode(img.read()))
     with open('images\deliveries\sushiWOK.jpg', 'rb') as img:
         photo3 = str(base64.b64encode(img.read()))
-    with open('images\deliveries\rokenrolli.jpg', 'rb') as img:
+    with open('images\deliveries\\rokenrolli.jpg', 'rb') as img:
         photo4 = str(base64.b64encode(img.read()))
-    with open('images\deliveries\brash.jpg', 'rb') as img:
+    with open('images\deliveries\\brash.jpg', 'rb') as img:
         photo5 = str(base64.b64encode(img.read()))
-    with open('images\deliveries\tamada.jpg', 'rb') as img:
+    with open('images\deliveries\\tamada.jpg', 'rb') as img:
         photo6 = str(base64.b64encode(img.read()))
 
     dt1 = DeliveryType(type_name='Пиццерии')
