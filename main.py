@@ -16,19 +16,26 @@ def helloworld():
 @app.route('/api/populate')
 @db_session
 def populate():
-    with open('images/deliveries/tashir.jpg', 'rb') as img:
-        photo1 = str(base64.b64encode(img.read()))
-    with open('images/deliveries/2berega.jpg', 'rb') as img:
-        photo2 = str(base64.b64encode(img.read()))
-    with open('images/deliveries/sushiWOK.jpg', 'rb') as img:
-        photo3 = str(base64.b64encode(img.read()))
-    with open('images/deliveries/rokenrolli.jpg', 'rb') as img:
-        photo4 = str(base64.b64encode(img.read()))
-    with open('images/deliveries/brash.jpg', 'rb') as img:
-        photo5 = str(base64.b64encode(img.read()))
-    with open('images/deliveries/tamada.jpg', 'rb') as img:
-        photo6 = str(base64.b64encode(img.read()))
-
+    # with open('images/deliveries/tashir.jpg', 'rb') as img:
+    #     photo1 = str(img.read())
+    # with open('images/deliveries/2berega.jpg', 'rb') as img:
+    #     photo2 = str(img.read())
+    # with open('images/deliveries/sushiWOK.jpg', 'rb') as img:
+    #     photo3 = str(img.read())
+    # with open('images/deliveries/rokenrolli.jpg', 'rb') as img:
+    #     photo4 = str(img.read())
+    # with open('images/deliveries/brash.jpg', 'rb') as img:
+    #     photo5 = str(img.read())
+    # with open('images/deliveries/tamada.jpg', 'rb') as img:
+    #     photo6 = str(img.read())
+    photo1 = Photos(local_path='static/images/deliveries/tashir.png')
+    photo2 = Photos(local_path='static/images/deliveries/2berega.jpg')
+    photo3 = Photos(local_path='static/images/deliveries/sushiWOK.jpg')
+    photo4 = Photos(local_path='static/images/deliveries/rokenrolli.jpg')
+    photo5 = Photos(local_path='static/images/deliveries/brash.jpg')
+    photo6 = Photos(local_path='static/images/deliveries/tamada.jpg')
+    pizza1 = Photos(local_path='static/images/menu/pizza1.jpg')
+    pizza2 = Photos(local_path='static/images/menu/pizza2.jpg')
     dt1 = DeliveryType(type_name='Пиццерии')
     dt2 = DeliveryType(type_name='Суши')
     dt3 = DeliveryType(type_name='На углях')
@@ -38,8 +45,8 @@ def populate():
     d4 = Delivery(name='Рокенроллы', type=dt2, courier_chatID=321545579, cook_chatID=654423948, photo=photo4)
     d5 = Delivery(name='Браш', type=dt3, courier_chatID=321541179, cook_chatID=654123118, photo=photo5)
     d6 = Delivery(name='Тамада', type=dt3, courier_chatID=321599879, cook_chatID=654123998, photo=photo6)
-    Menu(delivery_name=d1, name='4 сыра', description='Вкуснота', weight=1500, price=650)
-    Menu(delivery_name=d1, name='Мясная', description='Ваще оч вкусно', weight=1600, price=750)
+    Menu(delivery_name=d1, name='4 сыра', description='Вкуснота', weight=1500, price=650, photo=pizza1)
+    Menu(delivery_name=d1, name='Мясная', description='Ваще оч вкусно', weight=1600, price=750, photo=pizza2)
     Menu(delivery_name=d2, name='Гавайская', description='Вкуснота', weight=1500, price=650)
     Menu(delivery_name=d2, name='Пепперони', description='Ваще оч вкусно', weight=1600, price=750)
     Menu(delivery_name=d3, name='Филадельфия', description='Вкуснота', weight=1500, price=650)
@@ -135,56 +142,54 @@ def add_delivery():
 @app.route('/api/clients', methods=['POST'])
 @db_session
 def new_client():
-    req = request.get_json()
+    req = json.loads(request.get_json())
     address = Address(latitude=req['latitude'], longitude=req['longitude'], additional_info=req['additional_info'])
-    client = Client(chatID=req['chatID'], address=address)
+    client = Client(username=req['username'], address=address)
     return jsonify(client.to_dict())
 
 
-@app.route('/api/orders', methods=['POST'])
+@app.route('/api/orders/<string:username>', methods=['POST'])
 @db_session
-def place_order():
-    req = request.get_json()
-    order = Order(client=req['client'])
-    for i in req['info']:
-        OrderInfo(number=order, date=datetime.now(), menu_position=i['menu_position'], count=i['count'])
-    return jsonify(order.to_dict())
+def place_order(username):
+    order = Order(client=Client[username])
+    for i in ShoppingCart.select(lambda cart: cart.username == username):
+        OrderInfo(number=order, date=datetime.now(), menu_position=i.menu_position, count=i.count)
+    ShoppingCart.select(lambda cart: cart.username == username).delete(bulk=True)
+    return jsonify({'order_number': order.number})
 
 
-@app.route('/api/cart/<int:client>', methods=['GET', 'POST', 'PUT', 'DELETE'])
+@app.route('/api/cart/<string:client>', methods=['GET', 'POST', 'DELETE'])
 @db_session
 def manage_cart(client):
     if request.method == 'GET':
         result = []
-        for c in ShoppingCart.select(lambda cart: cart.chatID == client):
+        i = 0
+        for c in ShoppingCart.select(lambda cart: cart.username == client):
             result.append(c.to_dict())
+            result[i]['price'] = Menu[result[i]['menu_position']].price
+            result[i]['menu_position'] = Menu[result[i]['menu_position']].name
+            i += 1
         return jsonify(result)
     elif request.method == 'POST':
         req = json.loads(request.get_json())
-        cart = ShoppingCart.get(chatID=client,
+        cart = ShoppingCart.get(username=client,
                                 menu_position=Menu.get(delivery_name=Delivery.get(name=req['delivery']), name=req['menu_name']))
         if cart is None:
-            cart = ShoppingCart(chatID=client,
+            cart = ShoppingCart(username=client,
                                 menu_position=Menu.get(delivery_name=Delivery.get(name=req['delivery']), name=req['menu_name']),
-                                count=req['count'], date=datetime.now())
+                                count=1, date=datetime.now())
         else:
             cart.count += 1
-        return jsonify(cart.to_dict())
-    elif request.method == 'PUT':
-        req = json.loads(request.get_json())
-        cart = ShoppingCart.get(chatID=client,
-                                menu_position=Menu.get(delivery_name=Delivery.get(name=req['delivery']), name=req['menu_name']))
-        cart.count = req['count']
-        return jsonify(cart.to_dict())
+        return jsonify({'count': cart.count})
     else:
         req = json.loads(request.get_json())
         if req['whole']:
-            for c in ShoppingCart.select(lambda cart: cart.chatID == client):
+            for c in ShoppingCart.select(lambda cart: cart.username == client):
                 c.delete()
-            return make_response(200)
+            return '', 200
         else:
-            ShoppingCart.get(chatID=client, menu_position=req['menu_position']).delete()
-            return make_response(200)
+            ShoppingCart.get(username=client, menu_position=req['menu_position']).delete()
+            return '', 200
 
 
 @app.route('/api/menu/<string:delivery>')
@@ -223,5 +228,6 @@ def set_delivery_photo_id(d_name):
 
 if __name__ == '__main__':
     app.config['JSON_AS_ASCII'] = False
-    app.run(host="0.0.0.0", port=os.environ.get('PORT', 5000))
+    app.run(host="192.168.1.235", port=os.environ.get('PORT', 5000))
+    # app.run(host="0.0.0.0", port=os.environ.get('PORT', 5000))
     # app.run(debug=True)
