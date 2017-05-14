@@ -39,12 +39,13 @@ def populate():
     dt1 = DeliveryType(type_name='Пиццерии')
     dt2 = DeliveryType(type_name='Суши')
     dt3 = DeliveryType(type_name='На углях')
-    d1 = Delivery(name='Ташир', type=dt1, courier_chatID=321546879, cook_chatID=654123748, photo=photo1)
-    d2 = Delivery(name='2 Берега', type=dt1, courier_chatID=771546879, cook_chatID=774123748, photo=photo2)
-    d3 = Delivery(name='Суши WOK', type=dt2, courier_chatID=881546879, cook_chatID=124123748, photo=photo3)
-    d4 = Delivery(name='Рокенроллы', type=dt2, courier_chatID=321545579, cook_chatID=654423948, photo=photo4)
-    d5 = Delivery(name='Браш', type=dt3, courier_chatID=321541179, cook_chatID=654123118, photo=photo5)
-    d6 = Delivery(name='Тамада', type=dt3, courier_chatID=321599879, cook_chatID=654123998, photo=photo6)
+    d1 = Delivery(name='Ташир', type=dt1, cook_chat_username='debian17', photo=photo1)
+    d2 = Delivery(name='2 Берега', type=dt1, cook_chat_username='774123748', photo=photo2)
+    d3 = Delivery(name='Суши WOK', type=dt2, cook_chat_username='124123748', photo=photo3)
+    d4 = Delivery(name='Рокенроллы', type=dt2, cook_chat_username='654423948', photo=photo4)
+    d5 = Delivery(name='Браш', type=dt3, cook_chat_username='654123118', photo=photo5)
+    d6 = Delivery(name='Тамада', type=dt3, cook_chat_username='654123998', photo=photo6)
+    Couriers(username='basbk', delivery=d1)
     Menu(delivery_name=d1, name='4 сыра', description='Вкуснота', weight=1500, price=650, photo=pizza1)
     Menu(delivery_name=d1, name='Мясная', description='Ваще оч вкусно', weight=1600, price=750, photo=pizza2)
     Menu(delivery_name=d2, name='Гавайская', description='Вкуснота', weight=1500, price=650)
@@ -65,6 +66,12 @@ def populate():
     # o2 = Order(client=c1)
     # OrderInfo(number=o2, date=datetime.now(), menu_position=m2, count=3)
     return 'success'
+
+
+@app.route('/api/dropit')
+def drop_the_base():
+    db.drop_all_tables(with_all_data=True)
+    return 'done'
 
 
 @app.route('/api/orders')
@@ -152,10 +159,49 @@ def new_client():
 @db_session
 def place_order(username):
     order = Order(client=Client[username])
+    menu = []
     for i in ShoppingCart.select(lambda cart: cart.username == username):
-        OrderInfo(number=order, date=datetime.now(), menu_position=i.menu_position, count=i.count)
+        menu.append({'name': i.menu_position.name, 'count': i.count})
+        o = OrderInfo(number=order, date=datetime.now(), menu_position=i.menu_position, count=i.count)
     ShoppingCart.select(lambda cart: cart.username == username).delete(bulk=True)
-    return jsonify({'order_number': order.number})
+    # json.dumps(menu)
+    return jsonify({'order_number': order.number,
+                    'cook': o.menu_position.delivery_name.cook_chat_id,
+                    'menu': menu})
+
+
+@app.route('/api/orders/<int:number>', methods=['PUT'])
+@db_session
+def update_order(number):
+    req = json.loads(request.get_json())
+    order = Order[number]
+    if req['from'] == 'cook':
+        order.status = 1
+        courier = OrderInfo.select(lambda o: o.number.number == number).first().menu_position.delivery_name.couriers_chat_username.select(lambda c: c.busy is False).first()
+        order.courier = courier
+        return jsonify({'client': order.client.username,
+                        'courier': courier.chat_id,
+                        'address': order.client.address.additional_info})
+    elif req['from'] == 'courier':
+        order.status = 2
+        return jsonify({'client': order.client.username})
+    return '', 400
+
+
+@app.route('/api/staff/<string:username>', methods=['PUT'])
+@db_session
+def set_chat_id_for_staff(username):
+    req = json.loads(request.get_json())
+    cook = Delivery.get(cook_chat_username=username)
+    courier = Couriers.get(username=username)
+    if cook is not None:
+        cook.cook_chat_id = req['chatID']
+        return '', 200
+    elif courier is not None:
+        courier.chat_id = req['chatID']
+        return '', 200
+    else:
+        return '', 404
 
 
 @app.route('/api/cart/<string:client>', methods=['GET', 'POST', 'DELETE'])
@@ -184,8 +230,7 @@ def manage_cart(client):
     else:
         req = json.loads(request.get_json())
         if req['whole']:
-            for c in ShoppingCart.select(lambda cart: cart.username == client):
-                c.delete()
+            ShoppingCart.select(lambda cart: cart.username == client).delete(bulk=True)
             return '', 200
         else:
             ShoppingCart.get(username=client, menu_position=req['menu_position']).delete()
@@ -221,13 +266,13 @@ def set_menu_photo_id(m_name):
 @app.route('/api/deliveries/<string:d_name>/photo', methods=['PUT'])
 @db_session
 def set_delivery_photo_id(d_name):
-    d = Delivery.get(name=d_name)
+    d = Delivery[d_name]
     d.photo_id = request.args.get('photo_id')
     return d
 
 
 if __name__ == '__main__':
     app.config['JSON_AS_ASCII'] = False
-    app.run(host="192.168.1.235", port=os.environ.get('PORT', 5000))
+    # app.run(host="192.168.1.235", port=os.environ.get('PORT', 5000))
     # app.run(host="0.0.0.0", port=os.environ.get('PORT', 5000))
-    # app.run(debug=True)
+    app.run(debug=True)

@@ -12,11 +12,20 @@ class DeliveryType(db.Entity):
 class Delivery(db.Entity):
     name = PrimaryKey(str)
     type = Required(DeliveryType)
-    courier_chatID = Required(int)
-    cook_chatID = Required(int)
+    couriers_chat_username = Set('Couriers')
+    cook_chat_username = Required(str)
+    cook_chat_id = Optional(int)
     photo = Optional('Photos')
     photo_id = Optional(str)
     menu = Set('Menu', cascade_delete=True)
+
+
+class Couriers(db.Entity):
+    username = PrimaryKey(str)
+    chat_id = Optional(int)
+    busy = Required(bool, default=False)
+    delivery = Optional(Delivery)
+    orders = Set('Order')
 
 
 class Address(db.Entity):
@@ -54,6 +63,8 @@ class Menu(db.Entity):
 class Order(db.Entity):
     number = PrimaryKey(int, auto=True)
     client = Required(Client)
+    courier = Optional(Couriers)
+    status = Required(int, default=0)
     info = Set(OrderInfo, cascade_delete=True)
 
 
