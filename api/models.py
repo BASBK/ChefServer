@@ -20,7 +20,7 @@ class Deliveries(models.Model):
     """
 
     name = models.CharField(max_length=40, primary_key=True, help_text='Enter a delivery name')
-    chat_info = models.ForeignKey('ChatInfo', on_delete=models.SET_NULL, null=True)
+    cook_info = models.ForeignKey('ChatInfo', on_delete=models.SET_NULL, null=True)
     image = models.ForeignKey('Images', on_delete=models.SET_NULL, null=True)
     dtype = models.ForeignKey(DeliveryTypes, on_delete=models.SET_NULL, null=True)
 
@@ -42,7 +42,7 @@ class ChatInfo(models.Model):
     """
 
     username = models.CharField(max_length=30)
-    chat_id = models.IntegerField()
+    chat_id = models.IntegerField(null=True)
 
 
 class Images(models.Model):
